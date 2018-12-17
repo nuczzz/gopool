@@ -32,7 +32,6 @@ func (gp *goroutinePool) nextIndexAdd() {
 }
 
 func (gp *goroutinePool) getIndex() int {
-	//todo: replaced by atomic???
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
