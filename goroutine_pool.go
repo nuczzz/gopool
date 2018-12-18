@@ -6,21 +6,21 @@ import (
 )
 
 type goroutinePool struct {
-	// maxGoroutineNum max number of goroutine.
-	// the number of goroutines in pool is freeGoroutineNum+workingGoroutineNum.
+	// maxGoroutineNum max number of goroutine.the number of goroutines
+	// in pool is freeGoroutineNum+workingGoroutineNum.
 	maxGoroutineNum int
 
 	// lock lock of goroutine pool.
 	lock sync.Mutex
 
-	// freeGoroutines slice of free goroutines.
-	// if freeGoroutines is not nil, we get the last free Goroutine in freeGoroutines to handle a new request,
-	// and remove the Goroutine from freeGoroutines.
-	// if freeGoroutines is nil, we create a new Goroutine to handle it.
+	// freeGoroutines slice of free goroutines.if freeGoroutineNum is
+	// GREATER THAN ZERO, we get the last free Goroutine in freeGoroutines
+	// to handle a new request,and remove the Goroutine from freeGoroutines.
+	// if freeGoroutineNum is ZERO, we create a new Goroutine to handle it.
 	// after a Goroutine handled a request, put the Goroutine into freeGoroutines.
 	freeGoroutines []Goroutine
 
-	// freeGoroutineNum number of free goroutine in freeGoroutines.
+	// freeGoroutineNum number of free goroutines in freeGoroutines.
 	freeGoroutineNum int32
 
 	// workingGoroutineNum number of working goroutine.
@@ -63,7 +63,10 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 }
 
 func (gp *goroutinePool) GetTotalGoroutineNum() int {
-	return int(atomic.LoadInt32(&gp.freeGoroutineNum) + atomic.LoadInt32(&gp.workingGoroutineNum))
+	gp.lock.Lock()
+	defer gp.lock.Unlock()
+
+	return int(gp.freeGoroutineNum + gp.workingGoroutineNum)
 }
 
 func (gp *goroutinePool) GetFreeGoroutineNum() int {
