@@ -11,7 +11,7 @@ type goroutine struct {
 	pool *goroutinePool
 
 	// task channel for send or receive task
-	task chan func()
+	task chan Task
 }
 
 func (g *goroutine) Execute(task Task) {
@@ -30,7 +30,7 @@ func (g *goroutine) run() {
 func newGoroutine(pool *goroutinePool) Goroutine {
 	g := &goroutine{
 		pool: pool,
-		task: make(chan func(), 1),
+		task: make(chan Task, 1),
 	}
 	g.run()
 	return g
