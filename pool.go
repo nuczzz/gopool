@@ -2,17 +2,21 @@ package gopool
 
 type Pool interface {
 	//Get a goroutine from goroutine pool
-	Get() (Goroutine, error)
+	GetGoroutine() (Goroutine, error)
+
+	GetWorkingGoroutineNum() int
+
+	GetTotalGoroutineNum() int
 }
 
-func NewPool(maxNum, coreNum int) Pool {
-	if coreNum > maxNum {
-		coreNum = maxNum
-	}
+func NewPool(max int) Pool {
+	return newPool(max, defaultLogger)
+}
 
-	return &goroutinePool{
-		maxGoroutineNum:  maxNum,
-		coreGoroutineNum: coreNum,
-		goroutines:       make([]Goroutine, 0, maxNum),
-	}
+func NewPoolWithDefault() Pool {
+	return newPool(DefaultMaxGoroutineNum, defaultLogger)
+}
+
+func NewPoolWithLogger(max int, logger Logger) Pool {
+	return newPool(max, logger)
 }

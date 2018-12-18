@@ -1,51 +1,46 @@
 package gopool
 
-import (
-	"sync"
-	"sync/atomic"
-)
-
 type Goroutine interface {
 	Execute(task func())
-	IsWorking() bool
-	Run()
 }
 
 type goroutine struct {
-	//IsWorking status of the goroutine,
-	//set IsWorking to true before handle request,
-	//we can call the goroutine to handle new request if IsWorking == false
-	isWorking int32
+	// pool who manage this goroutine
+	pool *goroutinePool
 
-	//Lock lock of goroutine
-	Lock sync.Mutex
-
+	// task channel for send or receive task
 	task chan func()
-}
-
-func (g *goroutine) IsWorking() bool {
-	return atomic.LoadInt32(&g.isWorking) != 0
 }
 
 func (g *goroutine) Execute(task func()) {
 	g.task <- task
 }
 
-func (g *goroutine) Run() {
-	NewGoroutineWithRecover(func() {
+func (g *goroutine) run() {
+	g.newGoroutineWithRecover(func() {
 		for f := range g.task {
-			if f == nil {
-				//kill goroutine with nil task
-				return
-			}
-
 			f()
 		}
 	})
 }
 
 func newGoroutine() Goroutine {
-	return &goroutine{
+	g := &goroutine{
 		task: make(chan func(), 1),
 	}
+	g.run()
+	return g
+}
+
+func (g *goroutine) newGoroutineWithRecover(f func()) {
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				g.pool.logger.Error(err)
+				return
+			}
+		}()
+		f()
+		g.pool.recycleGoroutine(g)
+	}()
 }

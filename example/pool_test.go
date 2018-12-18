@@ -1,6 +1,8 @@
 package example
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPool(t *testing.T) {
 

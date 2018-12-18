@@ -1,18 +1,15 @@
 package gopool
 
 import (
-	"fmt"
+	"errors"
 )
 
-func NewGoroutineWithRecover(f func()) {
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				fmt.Println(err)
-				return
-			}
-		}()
+const (
+	DefaultMaxGoroutineNum = 50000
+)
 
-		f()
-	}()
-}
+var (
+	ErrPoolOverflow = errors.New("pool overflow")
+
+	defaultLogger = newDefaultLogger()
+)

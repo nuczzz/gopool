@@ -2,53 +2,78 @@ package gopool
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 type goroutinePool struct {
-	//coreGoroutineNum number of core goroutine.
-	//we create a new goroutine to handle a new request
-	//when goroutine number less than coreGoroutineNum,
-	//even if some goroutines are not working.
-	coreGoroutineNum int
-
-	//maxGoroutineNum max number of goroutine.
-	//maxGoroutineNum count all of the goroutines(include core goroutines).
+	// maxGoroutineNum max number of goroutine.
+	// the number of goroutines in pool is freeGoroutineNum+workingGoroutineNum.
 	maxGoroutineNum int
 
-	//lock lock of goroutine pool.
+	// lock lock of goroutine pool.
 	lock sync.Mutex
 
-	//index return goroutines[index] when get goroutine from goroutine pool, and index add 1
-	index int
+	// freeGoroutines slice of free goroutines.
+	// if freeGoroutines is not nil, we get the last free Goroutine in freeGoroutines to handle a new request,
+	// and remove the Goroutine from freeGoroutines.
+	// if freeGoroutines is nil, we create a new Goroutine to handle it.
+	// after a Goroutine handled a request, put the Goroutine into freeGoroutines.
+	freeGoroutines []Goroutine
 
-	//workGoroutine count of working goroutine
-	workGoroutine int
+	// freeGoroutineNum number of free goroutine in freeGoroutines.
+	freeGoroutineNum int32
 
-	//goroutines array of goroutine
-	goroutines []Goroutine
+	// workingGoroutineNum number of working goroutine.
+	workingGoroutineNum int32
+
+	// logger of goroutine pool.
+	logger Logger
 }
 
-func (gp *goroutinePool) nextIndexAdd() {
-}
-
-func (gp *goroutinePool) getIndex() int {
+func (gp *goroutinePool) GetGoroutine() (Goroutine, error) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
-	//Considering efficiency, DO NOT use
-	//gp.index = (gp.index+1) % gp.maxGoroutineNum
-	index := gp.index
-	if gp.index == gp.maxGoroutineNum-1 {
-		gp.index = 0
-	} else {
-		gp.index++
+	if gp.freeGoroutineNum > 0 {
+		g := gp.freeGoroutines[gp.freeGoroutineNum-1]
+		gp.freeGoroutines = gp.freeGoroutines[:gp.freeGoroutineNum-1]
+		gp.freeGoroutineNum--
+		gp.workingGoroutineNum++
+		return g, nil
+	} else if !gp.isOverflow() {
+		g := newGoroutine()
+		gp.workingGoroutineNum++
+		return g, nil
 	}
-	return index
+
+	return nil, ErrPoolOverflow
 }
 
-func (gp *goroutinePool) Get() (Goroutine, error) {
+func (gp *goroutinePool) isOverflow() bool {
+	return gp.freeGoroutineNum+gp.workingGoroutineNum >= int32(gp.maxGoroutineNum)
+}
+
+func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
-	//todo
+	gp.workingGoroutineNum--
+	gp.freeGoroutineNum++
+	gp.freeGoroutines = append(gp.freeGoroutines, g)
+}
+
+func (gp *goroutinePool) GetWorkingGoroutineNum() int {
+	return int(atomic.LoadInt32(&gp.workingGoroutineNum))
+}
+
+func (gp *goroutinePool) GetTotalGoroutineNum() int {
+	return int(atomic.LoadInt32(&gp.freeGoroutineNum) + atomic.LoadInt32(&gp.workingGoroutineNum))
+}
+
+func newPool(max int, logger Logger) Pool {
+	return &goroutinePool{
+		maxGoroutineNum: max,
+		logger:          logger,
+		freeGoroutines:  make([]Goroutine, 0, max),
+	}
 }
