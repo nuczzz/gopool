@@ -1,12 +1,17 @@
 package gopool
 
 type Pool interface {
-	//Get a goroutine from goroutine pool
-	GetGoroutine() (Goroutine, error)
+	// GetTotalGoroutineNum return the sum of free goroutine number and working goroutine number.
+	GetTotalGoroutineNum() int
 
+	// GetFreeGoroutineNum return the number of free goroutine.
+	GetFreeGoroutineNum() int
+
+	// GetWorkingGoroutineNum return the number of working goroutine.
 	GetWorkingGoroutineNum() int
 
-	GetTotalGoroutineNum() int
+	// SubmitTask submit task to goroutine pool.
+	SubmitTask(task Task) error
 }
 
 func NewPool(max int) Pool {

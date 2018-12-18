@@ -30,7 +30,7 @@ type goroutinePool struct {
 	logger Logger
 }
 
-func (gp *goroutinePool) GetGoroutine() (Goroutine, error) {
+func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
@@ -41,7 +41,7 @@ func (gp *goroutinePool) GetGoroutine() (Goroutine, error) {
 		gp.workingGoroutineNum++
 		return g, nil
 	} else if !gp.isOverflow() {
-		g := newGoroutine()
+		g := newGoroutine(gp)
 		gp.workingGoroutineNum++
 		return g, nil
 	}
@@ -62,12 +62,25 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 	gp.freeGoroutines = append(gp.freeGoroutines, g)
 }
 
+func (gp *goroutinePool) GetTotalGoroutineNum() int {
+	return int(atomic.LoadInt32(&gp.freeGoroutineNum) + atomic.LoadInt32(&gp.workingGoroutineNum))
+}
+
+func (gp *goroutinePool) GetFreeGoroutineNum() int {
+	return int(atomic.LoadInt32(&gp.freeGoroutineNum))
+}
+
 func (gp *goroutinePool) GetWorkingGoroutineNum() int {
 	return int(atomic.LoadInt32(&gp.workingGoroutineNum))
 }
 
-func (gp *goroutinePool) GetTotalGoroutineNum() int {
-	return int(atomic.LoadInt32(&gp.freeGoroutineNum) + atomic.LoadInt32(&gp.workingGoroutineNum))
+func (gp *goroutinePool) SubmitTask(task Task) error {
+	goroutine, err := gp.getGoroutine()
+	if err != nil {
+		return nil
+	}
+	goroutine.Execute(task)
+	return nil
 }
 
 func newPool(max int, logger Logger) Pool {

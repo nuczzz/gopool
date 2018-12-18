@@ -1,7 +1,9 @@
 package gopool
 
+type Task func()
+
 type Goroutine interface {
-	Execute(task func())
+	Execute(task Task)
 }
 
 type goroutine struct {
@@ -12,7 +14,7 @@ type goroutine struct {
 	task chan func()
 }
 
-func (g *goroutine) Execute(task func()) {
+func (g *goroutine) Execute(task Task) {
 	g.task <- task
 }
 
@@ -20,12 +22,14 @@ func (g *goroutine) run() {
 	g.newGoroutineWithRecover(func() {
 		for f := range g.task {
 			f()
+			g.pool.recycleGoroutine(g)
 		}
 	})
 }
 
-func newGoroutine() Goroutine {
+func newGoroutine(pool *goroutinePool) Goroutine {
 	g := &goroutine{
+		pool: pool,
 		task: make(chan func(), 1),
 	}
 	g.run()
@@ -41,6 +45,5 @@ func (g *goroutine) newGoroutineWithRecover(f func()) {
 			}
 		}()
 		f()
-		g.pool.recycleGoroutine(g)
 	}()
 }
