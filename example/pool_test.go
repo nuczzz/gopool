@@ -2,10 +2,9 @@ package example
 
 import (
 	"fmt"
-	"gopool"
+	"github.com/nuczzz/gopool"
 	"sync"
 	"testing"
-	"time"
 )
 
 func TestPool(t *testing.T) {
@@ -34,8 +33,6 @@ func TestPool(t *testing.T) {
 		}
 	}
 	wg.Wait()
-	fmt.Printf("\n\n\n")
-	time.Sleep(5 * time.Second)
 	fmt.Println("sum: ", count)
 	fmt.Printf("current goroutine: total[%v], working[%v], free[%v]\n",
 		pool.GetTotalGoroutineNum(), pool.GetWorkingGoroutineNum(), pool.GetFreeGoroutineNum())
