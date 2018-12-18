@@ -1,2 +1,2 @@
 # gopool
-Goroutine pool written in flyweight pattern.
+Goroutine pool for tcp/http/https server.
