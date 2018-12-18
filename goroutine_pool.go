@@ -16,8 +16,9 @@ type goroutinePool struct {
 	// freeGoroutines slice of free goroutines.if freeGoroutineNum is
 	// GREATER THAN ZERO, we get the last free Goroutine in freeGoroutines
 	// to handle a new request,and remove the Goroutine from freeGoroutines.
-	// if freeGoroutineNum is ZERO, we create a new Goroutine to handle it.
-	// after a Goroutine handled a request, put the Goroutine into freeGoroutines.
+	// if freeGoroutineNum is ZERO and total goroutines LESS THAN maxGoroutineNum,
+	// we create a new Goroutine to handle it.after a Goroutine handled a request,
+	// put the Goroutine into freeGoroutines.
 	freeGoroutines []Goroutine
 
 	// freeGoroutineNum number of free goroutines in freeGoroutines.
