@@ -2,7 +2,6 @@ package gopool
 
 import (
 	"sync"
-	"sync/atomic"
 )
 
 type goroutinePool struct {
@@ -71,11 +70,11 @@ func (gp *goroutinePool) GetTotalGoroutineNum() int {
 }
 
 func (gp *goroutinePool) GetFreeGoroutineNum() int {
-	return int(atomic.LoadInt32(&gp.freeGoroutineNum))
+	return int(gp.freeGoroutineNum)
 }
 
 func (gp *goroutinePool) GetWorkingGoroutineNum() int {
-	return int(atomic.LoadInt32(&gp.workingGoroutineNum))
+	return int(gp.workingGoroutineNum)
 }
 
 func (gp *goroutinePool) SubmitTask(task func()) error {
