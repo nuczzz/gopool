@@ -78,7 +78,7 @@ func (gp *goroutinePool) GetWorkingGoroutineNum() int {
 	return int(atomic.LoadInt32(&gp.workingGoroutineNum))
 }
 
-func (gp *goroutinePool) SubmitTask(task Task) error {
+func (gp *goroutinePool) SubmitTask(task func()) error {
 	goroutine, err := gp.getGoroutine()
 	if err != nil {
 		return nil

@@ -12,7 +12,7 @@ type Pool interface {
 	GetWorkingGoroutineNum() int
 
 	// SubmitTask submit task to goroutine pool.
-	SubmitTask(task Task) error
+	SubmitTask(task func()) error
 }
 
 func NewPool(max int) Pool {

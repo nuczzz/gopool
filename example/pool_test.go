@@ -2,9 +2,10 @@ package example
 
 import (
 	"fmt"
-	"github.com/nuczzz/gopool"
 	"sync"
 	"testing"
+
+	"github.com/nuczzz/gopool"
 )
 
 func TestPool(t *testing.T) {
