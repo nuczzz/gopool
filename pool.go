@@ -16,9 +16,9 @@ type Pool interface {
 }
 
 func NewPool(max int) Pool {
-	return newPool(max, defaultLogger)
+	return newPool(max)
 }
 
 func NewPoolWithDefault() Pool {
-	return newPool(DefaultMaxGoroutineNum, defaultLogger)
+	return newPool(DefaultMaxGoroutineNum)
 }
