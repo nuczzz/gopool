@@ -1,8 +1,13 @@
 package gopool
 
 import (
+	"errors"
 	"sync"
 )
+
+const DefaultMaxGoroutineNum = 50000
+
+var ErrPoolOverflow = errors.New("pool overflow")
 
 type goroutinePool struct {
 	// maxGoroutineNum max number of goroutine.the number of goroutines
@@ -25,9 +30,6 @@ type goroutinePool struct {
 
 	// workingGoroutineNum number of working goroutine.
 	workingGoroutineNum int32
-
-	// logger of goroutine pool.
-	logger Logger
 }
 
 func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
@@ -86,10 +88,9 @@ func (gp *goroutinePool) SubmitTask(task func()) error {
 	return nil
 }
 
-func newPool(max int, logger Logger) Pool {
+func newPool(max int) Pool {
 	return &goroutinePool{
 		maxGoroutineNum: max,
-		logger:          logger,
 		freeGoroutines:  make([]Goroutine, 0, max),
 	}
 }

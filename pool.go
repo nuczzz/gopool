@@ -22,7 +22,3 @@ func NewPool(max int) Pool {
 func NewPoolWithDefault() Pool {
 	return newPool(DefaultMaxGoroutineNum, defaultLogger)
 }
-
-func NewPoolWithLogger(max int, logger Logger) Pool {
-	return newPool(max, logger)
-}

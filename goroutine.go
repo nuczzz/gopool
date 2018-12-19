@@ -1,5 +1,11 @@
 package gopool
 
+import (
+	"bytes"
+	"log"
+	"runtime/debug"
+)
+
 type Task func()
 
 type Goroutine interface {
@@ -40,8 +46,9 @@ func (g *goroutine) newGoroutineWithRecover(f func()) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				g.pool.logger.Error(err)
-				return
+				var buf bytes.Buffer
+				buf.Write(debug.Stack())
+				log.Print(buf.String())
 			}
 		}()
 		f()
