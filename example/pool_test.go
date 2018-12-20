@@ -38,3 +38,5 @@ func TestPool(t *testing.T) {
 	fmt.Printf("current goroutine: total[%v], working[%v], free[%v]\n",
 		pool.GetTotalGoroutineNum(), pool.GetWorkingGoroutineNum(), pool.GetFreeGoroutineNum())
 }
+
+//todo: benchmark test

@@ -12,6 +12,7 @@ type Goroutine interface {
 	Execute(task Task)
 }
 
+// todo: when a goroutine free long time, kill it.add timer?
 type goroutine struct {
 	// pool who manage this goroutine
 	pool *goroutinePool
