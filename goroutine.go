@@ -12,7 +12,7 @@ type Goroutine interface {
 	Execute(task Task)
 }
 
-// todo: when a goroutine free long time, kill it.add timer?
+// todo: when a goroutine free long time, kill it.
 type goroutine struct {
 	// pool who manage this goroutine
 	pool *goroutinePool
@@ -26,7 +26,7 @@ func (g *goroutine) Execute(task Task) {
 }
 
 func (g *goroutine) run() {
-	g.newGoroutineWithRecover(func() {
+	newGoroutineWithRecover(func() {
 		for f := range g.task {
 			f()
 			g.pool.recycleGoroutine(g)
@@ -43,7 +43,7 @@ func newGoroutine(pool *goroutinePool) Goroutine {
 	return g
 }
 
-func (g *goroutine) newGoroutineWithRecover(f func()) {
+func newGoroutineWithRecover(f func()) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
