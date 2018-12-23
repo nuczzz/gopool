@@ -1,12 +1,12 @@
 package gopool
 
 type Pool interface {
-	// GetTotalGoroutineNum return the sum of free goroutine number
+	// GetTotalGoroutineNum return the sum of idle goroutine number
 	// and working goroutine number.
 	GetTotalGoroutineNum() int
 
-	// GetFreeGoroutineNum return the number of free goroutine.
-	GetFreeGoroutineNum() int
+	// GetFreeGoroutineNum return the number of idle goroutine.
+	GetIdleGoroutineNum() int
 
 	// GetWorkingGoroutineNum return the number of working goroutine.
 	GetWorkingGoroutineNum() int

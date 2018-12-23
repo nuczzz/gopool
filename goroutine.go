@@ -14,7 +14,6 @@ type Goroutine interface {
 	ResetTimeout()
 }
 
-// todo: when a goroutine free long time, kill it.
 type goroutine struct {
 	// pool who manage this goroutine.
 	pool *goroutinePool
@@ -22,7 +21,7 @@ type goroutine struct {
 	// task channel for send or receive task.
 	task chan Task
 
-	// timer timer for release free resource of goroutine.
+	// timer timer for release idle goroutine resource.
 	timer *time.Timer
 }
 

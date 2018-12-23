@@ -15,37 +15,37 @@ var ErrPoolOverflow = errors.New("pool overflow")
 
 type goroutinePool struct {
 	// maxGoroutineNum max number of goroutine.the number of goroutines
-	// in pool is freeGoroutineNum+workingGoroutineNum.
+	// in pool is idleGoroutineNum+workingGoroutineNum.
 	maxGoroutineNum int
 
 	// lock lock of goroutine pool.
 	lock sync.Mutex
 
-	// freeGoroutines slice of free goroutines.if freeGoroutineNum is
-	// GREATER THAN ZERO, we get the last free Goroutine in freeGoroutines
-	// to handle a new request,and remove the Goroutine from freeGoroutines.
-	// if freeGoroutineNum is ZERO and total goroutines LESS THAN maxGoroutineNum,
+	// idleGoroutines slice of idle goroutines.if idleGoroutineNum is
+	// GREATER THAN ZERO, we get the last idle Goroutine in idleGoroutines
+	// to handle a new request,then remove the Goroutine from idleGoroutines.
+	// if idleGoroutineNum is ZERO and total goroutines LESS THAN maxGoroutineNum,
 	// we create a new Goroutine to handle it.after a Goroutine handled a request,
-	// put the Goroutine into freeGoroutines.
-	freeGoroutines []Goroutine
+	// put the Goroutine into idleGoroutines.
+	idleGoroutines []Goroutine
 
-	// freeGoroutineNum number of free goroutines in freeGoroutines.
-	freeGoroutineNum int32
+	// idleGoroutineNum number of idle goroutines in idleGoroutines.
+	idleGoroutineNum int32
 
 	// workingGoroutineNum number of working goroutine.
 	workingGoroutineNum int32
 
-	// maxLifeTime max life time of free goroutine.
+	// maxLifeTime max life time of idle goroutine.
 	maxLifeTime time.Duration
 }
 
 func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
-	if gp.freeGoroutineNum > 0 {
-		g := gp.freeGoroutines[gp.freeGoroutineNum-1]
-		gp.freeGoroutines = gp.freeGoroutines[:gp.freeGoroutineNum-1]
-		gp.freeGoroutineNum--
+	if gp.idleGoroutineNum > 0 {
+		g := gp.idleGoroutines[gp.idleGoroutineNum-1]
+		gp.idleGoroutines = gp.idleGoroutines[:gp.idleGoroutineNum-1]
+		gp.idleGoroutineNum--
 		gp.workingGoroutineNum++
 		return g, nil
 	} else if !gp.isOverflow() {
@@ -58,7 +58,7 @@ func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
 }
 
 func (gp *goroutinePool) isOverflow() bool {
-	return gp.freeGoroutineNum+gp.workingGoroutineNum >= int32(gp.maxGoroutineNum)
+	return gp.idleGoroutineNum+gp.workingGoroutineNum >= int32(gp.maxGoroutineNum)
 }
 
 func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
@@ -66,8 +66,8 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 	defer gp.lock.Unlock()
 
 	gp.workingGoroutineNum--
-	gp.freeGoroutineNum++
-	gp.freeGoroutines = append(gp.freeGoroutines, g)
+	gp.idleGoroutineNum++
+	gp.idleGoroutines = append(gp.idleGoroutines, g)
 	g.ResetTimeout()
 }
 
@@ -75,7 +75,7 @@ func (gp *goroutinePool) releaseGoroutine(g Goroutine) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
-	gp.freeGoroutineNum--
+	gp.idleGoroutineNum--
 	//todo
 }
 
@@ -83,11 +83,11 @@ func (gp *goroutinePool) GetTotalGoroutineNum() int {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
-	return int(gp.freeGoroutineNum + gp.workingGoroutineNum)
+	return int(gp.idleGoroutineNum + gp.workingGoroutineNum)
 }
 
-func (gp *goroutinePool) GetFreeGoroutineNum() int {
-	return int(gp.freeGoroutineNum)
+func (gp *goroutinePool) GetIdleGoroutineNum() int {
+	return int(gp.idleGoroutineNum)
 }
 
 func (gp *goroutinePool) GetWorkingGoroutineNum() int {
@@ -106,7 +106,7 @@ func (gp *goroutinePool) SubmitTask(task func()) error {
 func newPool(max int) Pool {
 	return &goroutinePool{
 		maxGoroutineNum: max,
-		freeGoroutines:  make([]Goroutine, 0, max),
+		idleGoroutines:  make([]Goroutine, 0, max),
 		maxLifeTime:     time.Second * time.Duration(DefaultMaxLifeTime),
 	}
 }

@@ -21,8 +21,8 @@ func TestPool(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(expectMaxGoroutines)
 	for i := 0; i < expectMaxGoroutines; i++ {
-		fmt.Printf("current goroutine: total[%v], working[%v], free[%v]\n",
-			pool.GetTotalGoroutineNum(), pool.GetWorkingGoroutineNum(), pool.GetFreeGoroutineNum())
+		fmt.Printf("current goroutine: total[%v], working[%v], idle[%v]\n",
+			pool.GetTotalGoroutineNum(), pool.GetWorkingGoroutineNum(), pool.GetIdleGoroutineNum())
 		task := func() {
 			for j := 0; j < 100; j++ {
 				lock.Lock()
@@ -38,8 +38,8 @@ func TestPool(t *testing.T) {
 	wg.Wait()
 	fmt.Println("sum: ", count)
 	for i := 0; i < 10; i++ {
-		fmt.Printf("current goroutine: total[%v], working[%v], free[%v]\n",
-			pool.GetTotalGoroutineNum(), pool.GetWorkingGoroutineNum(), pool.GetFreeGoroutineNum())
+		fmt.Printf("current goroutine: total[%v], working[%v], idle[%v]\n",
+			pool.GetTotalGoroutineNum(), pool.GetWorkingGoroutineNum(), pool.GetIdleGoroutineNum())
 		time.Sleep(time.Second)
 	}
 }
