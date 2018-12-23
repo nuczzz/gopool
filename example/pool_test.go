@@ -5,7 +5,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/nuczzz/gopool"
+	//"github.com/nuczzz/gopool"
+	"gopool"
+	"time"
 )
 
 func TestPool(t *testing.T) {
@@ -35,8 +37,11 @@ func TestPool(t *testing.T) {
 	}
 	wg.Wait()
 	fmt.Println("sum: ", count)
-	fmt.Printf("current goroutine: total[%v], working[%v], free[%v]\n",
-		pool.GetTotalGoroutineNum(), pool.GetWorkingGoroutineNum(), pool.GetFreeGoroutineNum())
+	for i := 0; i < 10; i++ {
+		fmt.Printf("current goroutine: total[%v], working[%v], free[%v]\n",
+			pool.GetTotalGoroutineNum(), pool.GetWorkingGoroutineNum(), pool.GetFreeGoroutineNum())
+		time.Sleep(time.Second)
+	}
 }
 
 //todo: benchmark test

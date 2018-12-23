@@ -3,9 +3,13 @@ package gopool
 import (
 	"errors"
 	"sync"
+	"time"
 )
 
-const DefaultMaxGoroutineNum = 50000
+const (
+	DefaultMaxGoroutineNum = 50000
+	DefaultMaxLifeTime     = 5 * 60 //second
+)
 
 var ErrPoolOverflow = errors.New("pool overflow")
 
@@ -30,12 +34,14 @@ type goroutinePool struct {
 
 	// workingGoroutineNum number of working goroutine.
 	workingGoroutineNum int32
+
+	// maxLifeTime max life time of free goroutine.
+	maxLifeTime time.Duration
 }
 
 func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
-
 	if gp.freeGoroutineNum > 0 {
 		g := gp.freeGoroutines[gp.freeGoroutineNum-1]
 		gp.freeGoroutines = gp.freeGoroutines[:gp.freeGoroutineNum-1]
@@ -62,6 +68,15 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 	gp.workingGoroutineNum--
 	gp.freeGoroutineNum++
 	gp.freeGoroutines = append(gp.freeGoroutines, g)
+	g.ResetTimeout()
+}
+
+func (gp *goroutinePool) releaseGoroutine(g Goroutine) {
+	gp.lock.Lock()
+	defer gp.lock.Unlock()
+
+	gp.freeGoroutineNum--
+	//todo
 }
 
 func (gp *goroutinePool) GetTotalGoroutineNum() int {
@@ -92,5 +107,6 @@ func newPool(max int) Pool {
 	return &goroutinePool{
 		maxGoroutineNum: max,
 		freeGoroutines:  make([]Goroutine, 0, max),
+		maxLifeTime:     time.Second * time.Duration(DefaultMaxLifeTime),
 	}
 }
