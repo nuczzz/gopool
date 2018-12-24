@@ -2,10 +2,10 @@ package gopool
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"runtime/debug"
 	"time"
-	"errors"
 )
 
 type Task func()
@@ -48,7 +48,6 @@ func (g *goroutine) run() {
 		for {
 			select {
 			case task := <-g.task:
-				g.timer.Stop()
 				task()
 				g.pool.recycleGoroutine(g)
 			case <-g.timer.C:
