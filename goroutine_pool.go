@@ -94,13 +94,23 @@ func (gp *goroutinePool) GetWorkingGoroutineNum() int {
 	return int(gp.workingGoroutineNum)
 }
 
+// SubmitTask submit task to goroutine pool, goroutine pool
+// will try to get a free goroutine or create a new goroutine.
+// Returns a error if the count of goroutine pool current
+// goroutines over maxGoroutineNum. If get a goroutine but
+// when the goroutine execute task return error(stop goroutine
+// timer failed), we will try to get another goroutine to
+// execute the task again.
 func (gp *goroutinePool) SubmitTask(task func()) error {
-	goroutine, err := gp.getGoroutine()
-	if err != nil {
-		return nil
+	for {
+		goroutine, err := gp.getGoroutine()
+		if err != nil {
+			return err
+		}
+		if goroutine.Execute(task) == nil {
+			return nil
+		}
 	}
-	goroutine.Execute(task)
-	return nil
 }
 
 func newPool(max int) Pool {

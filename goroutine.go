@@ -5,12 +5,13 @@ import (
 	"log"
 	"runtime/debug"
 	"time"
+	"errors"
 )
 
 type Task func()
 
 type Goroutine interface {
-	Execute(task Task)
+	Execute(task Task) error
 	ResetTimeout()
 }
 
@@ -25,8 +26,17 @@ type goroutine struct {
 	timer *time.Timer
 }
 
-func (g *goroutine) Execute(task Task) {
+// Execute stop the timer before a goroutine execute task,
+// and returns error if stop timer failed(timer has stopped).
+// When g.timer received timeout signal, goroutine pool will
+// release the goroutine, and the task will not be executed
+// forever.
+func (g *goroutine) Execute(task Task) error {
+	if !g.timer.Stop() {
+		return errors.New("stop timer false")
+	}
 	g.task <- task
+	return nil
 }
 
 func (g *goroutine) ResetTimeout() {
