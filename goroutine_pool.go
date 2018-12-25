@@ -72,11 +72,11 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 	g.ResetTimeout()
 }
 
+// todo: goroutine pool check idle goroutine timeout periodically maybe better
 func (gp *goroutinePool) releaseGoroutine(g Goroutine) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
-	// todo: goroutine check free goroutine timeout maybe better
 	for i := range gp.idleGoroutines {
 		if g == gp.idleGoroutines[i] {
 			gp.idleGoroutines = append(gp.idleGoroutines[:i], gp.idleGoroutines[i+1:]...)
