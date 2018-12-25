@@ -8,7 +8,8 @@ import (
 
 const (
 	DefaultMaxGoroutineNum = 50000
-	DefaultMaxLifeTime     = 5 * 60 //second
+	//DefaultMaxLifeTime     = 5 * 60 //second
+	DefaultMaxLifeTime     = 3 //second
 )
 
 var ErrPoolOverflow = errors.New("pool overflow")
@@ -75,8 +76,14 @@ func (gp *goroutinePool) releaseGoroutine(g Goroutine) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
-	gp.idleGoroutineNum--
-	//todo
+	// todo: goroutine check free goroutine timeout maybe better
+	for i := range gp.idleGoroutines {
+		if g == gp.idleGoroutines[i] {
+			gp.idleGoroutines = append(gp.idleGoroutines[:i], gp.idleGoroutines[i+1:]...)
+			gp.idleGoroutineNum--
+			return
+		}
+	}
 }
 
 func (gp *goroutinePool) GetTotalGoroutineNum() int {
