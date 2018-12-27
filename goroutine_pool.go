@@ -34,9 +34,6 @@ type goroutinePool struct {
 	// put the Goroutine into idleGoroutines.
 	idleGoroutines []Goroutine
 
-	// idleGoroutineNum number of idle goroutines in idleGoroutines.
-	idleGoroutineNum int
-
 	// workingGoroutineNum number of working goroutine.
 	workingGoroutineNum int
 
@@ -47,10 +44,12 @@ type goroutinePool struct {
 func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
-	if gp.idleGoroutineNum > 0 {
-		g := gp.idleGoroutines[gp.idleGoroutineNum-1]
-		gp.idleGoroutines = gp.idleGoroutines[:gp.idleGoroutineNum-1]
-		gp.idleGoroutineNum--
+
+	length := len(gp.idleGoroutines)
+	if length > 0 {
+		g := gp.idleGoroutines[length-1]
+		gp.idleGoroutines[length-1] = nil
+		gp.idleGoroutines = gp.idleGoroutines[:length-1]
 		gp.workingGoroutineNum++
 		return g, nil
 	} else if !gp.isOverflow() {
@@ -63,7 +62,7 @@ func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
 }
 
 func (gp *goroutinePool) isOverflow() bool {
-	return gp.idleGoroutineNum+gp.workingGoroutineNum >= gp.maxGoroutineNum
+	return len(gp.idleGoroutines)+gp.workingGoroutineNum >= gp.maxGoroutineNum
 }
 
 func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
@@ -71,7 +70,6 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 	defer gp.lock.Unlock()
 
 	gp.workingGoroutineNum--
-	gp.idleGoroutineNum++
 	gp.idleGoroutines = append(gp.idleGoroutines, g)
 	g.ResetTimeout()
 }
@@ -83,11 +81,10 @@ func (gp *goroutinePool) releaseGoroutine(g Goroutine) {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
-	if gp.idleGoroutineNum > gp.maxIdleGoroutineNum {
+	if len(gp.idleGoroutines) > gp.maxIdleGoroutineNum {
 		for i := range gp.idleGoroutines {
 			if g == gp.idleGoroutines[i] {
 				gp.idleGoroutines = append(gp.idleGoroutines[:i], gp.idleGoroutines[i+1:]...)
-				gp.idleGoroutineNum--
 				return
 			}
 		}
@@ -100,11 +97,11 @@ func (gp *goroutinePool) GetTotalGoroutineNum() int {
 	gp.lock.Lock()
 	defer gp.lock.Unlock()
 
-	return int(gp.idleGoroutineNum + gp.workingGoroutineNum)
+	return len(gp.idleGoroutines) + gp.workingGoroutineNum
 }
 
 func (gp *goroutinePool) GetIdleGoroutineNum() int {
-	return int(gp.idleGoroutineNum)
+	return len(gp.idleGoroutines)
 }
 
 func (gp *goroutinePool) GetWorkingGoroutineNum() int {
