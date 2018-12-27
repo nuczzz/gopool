@@ -73,8 +73,8 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 	gp.idleGoroutines = append(gp.idleGoroutines, g)
 }
 
-// releaseGoroutine release timeout idle goroutine if idleGoroutineNum greater
-// than maxIdleGoroutineNum, and reset goroutine timeout if less or equal.
+// cleanGoroutinePeriodically clean idle goroutine if idleGoroutineNum greater
+// than maxIdleGoroutineNum.
 func (gp *goroutinePool) cleanGoroutinePeriodically() {
 	for {
 		select {

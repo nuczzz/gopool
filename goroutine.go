@@ -22,19 +22,17 @@ type goroutine struct {
 	task chan Task
 }
 
-// Execute stop the timer before a goroutine execute task,
-// and returns error if stop timer failed(timer has stopped).
-// When g.timer received timeout signal, goroutine pool will
-// release the goroutine, and the task will not be executed
-// forever.
+// Execute execute task
 func (g *goroutine) Execute(task Task) {
 	g.task <- task
 }
 
+// Terminal terminal goroutine
 func (g *goroutine) Terminal() {
 	g.task <- nil
 }
 
+// run run goroutine
 func (g *goroutine) run() {
 	g.newGoroutineWithRecover(func() {
 		for {
@@ -50,6 +48,7 @@ func (g *goroutine) run() {
 	})
 }
 
+// newGoroutine create new goroutine and run it.
 func newGoroutine(pool *goroutinePool) Goroutine {
 	g := &goroutine{
 		pool: pool,
@@ -59,6 +58,7 @@ func newGoroutine(pool *goroutinePool) Goroutine {
 	return g
 }
 
+// newGoroutineWithRecover create new goroutine with recover
 func (g *goroutine) newGoroutineWithRecover(f func()) {
 	go func() {
 		defer func() {
