@@ -10,13 +10,15 @@ type Task func()
 
 type Goroutine interface {
 	Execute(task Task)
+	Terminal()
 }
 
 type goroutine struct {
 	// pool who manage this goroutine.
 	pool *goroutinePool
 
-	// task channel for send or receive task.
+	// task channel for send or receive task, if task is nil,
+	// release goroutine.
 	task chan Task
 }
 
@@ -29,11 +31,18 @@ func (g *goroutine) Execute(task Task) {
 	g.task <- task
 }
 
+func (g *goroutine) Terminal() {
+	g.task <- nil
+}
+
 func (g *goroutine) run() {
 	g.newGoroutineWithRecover(func() {
 		for {
 			select {
 			case task := <-g.task:
+				if task == nil {
+					return
+				}
 				task()
 				g.pool.recycleGoroutine(g)
 			}

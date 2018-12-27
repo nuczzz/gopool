@@ -9,8 +9,8 @@ import (
 const (
 	DefaultMaxGoroutineNum     = 50000
 	DefaultMaxIdleGoroutineNum = 10
-	//DefaultMaxLifeTime     = 5 * 60 //second
-	DefaultMaxLifeTime = 3 //second
+	//DefaultCleanPeriod     = 5 * 60 //second
+	DefaultCleanPeriod = 3 //second
 )
 
 var ErrPoolOverflow = errors.New("pool overflow")
@@ -37,8 +37,8 @@ type goroutinePool struct {
 	// workingGoroutineNum number of working goroutine.
 	workingGoroutineNum int
 
-	// duration duration to release idle goroutine.
-	duration time.Duration
+	// ticker ticker to release idle goroutine.
+	ticker *time.Ticker
 }
 
 func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
@@ -75,13 +75,17 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 
 // releaseGoroutine release timeout idle goroutine if idleGoroutineNum greater
 // than maxIdleGoroutineNum, and reset goroutine timeout if less or equal.
-func (gp *goroutinePool) releaseGoroutine() {
-	timer := time.NewTicker(gp.duration)
+func (gp *goroutinePool) cleanGoroutinePeriodically() {
 	for {
 		select {
-		case <-timer.C:
+		case <-gp.ticker.C:
 			gp.lock.Lock()
-			if len(gp.idleGoroutines) > gp.maxIdleGoroutineNum {
+			length := len(gp.idleGoroutines)
+			if length > gp.maxIdleGoroutineNum {
+				for i := gp.maxIdleGoroutineNum; i < length; i++ {
+					gp.idleGoroutines[i].Terminal()
+					gp.idleGoroutines[i] = nil
+				}
 				gp.idleGoroutines = gp.idleGoroutines[:gp.maxIdleGoroutineNum]
 			}
 			gp.lock.Unlock()
@@ -125,8 +129,8 @@ func newPool(max int) Pool {
 		maxGoroutineNum:     max,
 		maxIdleGoroutineNum: DefaultMaxIdleGoroutineNum,
 		idleGoroutines:      make([]Goroutine, 0, max),
-		duration:            time.Second * time.Duration(DefaultMaxLifeTime),
+		ticker:              time.NewTicker(time.Second * DefaultCleanPeriod),
 	}
-	go pool.releaseGoroutine()
+	go pool.cleanGoroutinePeriodically()
 	return pool
 }
