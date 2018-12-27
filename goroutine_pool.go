@@ -37,8 +37,8 @@ type goroutinePool struct {
 	// workingGoroutineNum number of working goroutine.
 	workingGoroutineNum int
 
-	// maxLifeTime max life time of idle goroutine.
-	maxLifeTime time.Duration
+	// duration duration to release idle goroutine.
+	duration time.Duration
 }
 
 func (gp *goroutinePool) getGoroutine() (Goroutine, error) {
@@ -71,26 +71,22 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 
 	gp.workingGoroutineNum--
 	gp.idleGoroutines = append(gp.idleGoroutines, g)
-	g.ResetTimeout()
 }
 
-// todo: goroutine pool check idle goroutine timeout periodically maybe better
 // releaseGoroutine release timeout idle goroutine if idleGoroutineNum greater
 // than maxIdleGoroutineNum, and reset goroutine timeout if less or equal.
-func (gp *goroutinePool) releaseGoroutine(g Goroutine) {
-	gp.lock.Lock()
-	defer gp.lock.Unlock()
-
-	if len(gp.idleGoroutines) > gp.maxIdleGoroutineNum {
-		for i := range gp.idleGoroutines {
-			if g == gp.idleGoroutines[i] {
-				gp.idleGoroutines = append(gp.idleGoroutines[:i], gp.idleGoroutines[i+1:]...)
-				return
+func (gp *goroutinePool) releaseGoroutine() {
+	timer := time.NewTicker(gp.duration)
+	for {
+		select {
+		case <-timer.C:
+			gp.lock.Lock()
+			if len(gp.idleGoroutines) > gp.maxIdleGoroutineNum {
+				gp.idleGoroutines = gp.idleGoroutines[:gp.maxIdleGoroutineNum]
 			}
+			gp.lock.Unlock()
 		}
 	}
-
-	g.ResetTimeout()
 }
 
 func (gp *goroutinePool) GetTotalGoroutineNum() int {
@@ -116,22 +112,21 @@ func (gp *goroutinePool) GetWorkingGoroutineNum() int {
 // timer failed), we will try to get another goroutine to
 // execute the task again.
 func (gp *goroutinePool) SubmitTask(task func()) error {
-	for {
-		goroutine, err := gp.getGoroutine()
-		if err != nil {
-			return err
-		}
-		if goroutine.Execute(task) == nil {
-			return nil
-		}
+	goroutine, err := gp.getGoroutine()
+	if err != nil {
+		return err
 	}
+	goroutine.Execute(task)
+	return nil
 }
 
 func newPool(max int) Pool {
-	return &goroutinePool{
+	pool := &goroutinePool{
 		maxGoroutineNum:     max,
 		maxIdleGoroutineNum: DefaultMaxIdleGoroutineNum,
 		idleGoroutines:      make([]Goroutine, 0, max),
-		maxLifeTime:         time.Second * time.Duration(DefaultMaxLifeTime),
+		duration:            time.Second * time.Duration(DefaultMaxLifeTime),
 	}
+	go pool.releaseGoroutine()
+	return pool
 }
