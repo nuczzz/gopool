@@ -124,11 +124,17 @@ func (gp *goroutinePool) SubmitTask(task func()) error {
 	return nil
 }
 
-func newPool(max int) Pool {
+func newPool(maxGoNum, maxIdleGoNum int) Pool {
+	if maxGoNum <= 0 {
+		maxGoNum = DefaultMaxGoroutineNum
+	}
+	if maxIdleGoNum <= 0 {
+		maxIdleGoNum = DefaultMaxIdleGoroutineNum
+	}
 	pool := &goroutinePool{
-		maxGoroutineNum:     max,
-		maxIdleGoroutineNum: DefaultMaxIdleGoroutineNum,
-		idleGoroutines:      make([]Goroutine, 0, max),
+		maxGoroutineNum:     maxGoNum,
+		maxIdleGoroutineNum: maxIdleGoNum,
+		idleGoroutines:      make([]Goroutine, 0, maxGoNum),
 		ticker:              time.NewTicker(time.Second * DefaultCleanPeriod),
 	}
 	go pool.cleanGoroutinePeriodically()
