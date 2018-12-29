@@ -1,2 +1,2 @@
 # gopool
-Goroutine pool for tcp/http/https server.
+Goroutine pool for tcp/http/https server, etc..
