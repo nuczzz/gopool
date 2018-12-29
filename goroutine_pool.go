@@ -9,8 +9,7 @@ import (
 const (
 	DefaultMaxGoroutineNum     = 50000
 	DefaultMaxIdleGoroutineNum = 10
-	//DefaultCleanPeriod     = 5 * 60 //second
-	DefaultCleanPeriod = 3 //second
+	DefaultCleanInterval       = 5 * 60 //second
 )
 
 var ErrPoolOverflow = errors.New("pool overflow")
@@ -132,7 +131,7 @@ func newPool(maxGoNum, maxIdleGoNum int) Pool {
 		maxGoroutineNum:     maxGoNum,
 		maxIdleGoroutineNum: maxIdleGoNum,
 		idleGoroutines:      make([]Goroutine, 0, maxGoNum),
-		ticker:              time.NewTicker(time.Second * DefaultCleanPeriod),
+		ticker:              time.NewTicker(time.Second * DefaultCleanInterval),
 	}
 	go pool.cleanGoroutinePeriodically()
 	return pool
