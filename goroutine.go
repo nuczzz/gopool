@@ -35,15 +35,12 @@ func (g *goroutine) Terminal() {
 // run run goroutine
 func (g *goroutine) run() {
 	g.newGoroutineWithRecover(func() {
-		for {
-			select {
-			case task := <-g.task:
-				if task == nil {
-					return
-				}
-				task()
-				g.pool.recycleGoroutine(g)
+		for task := range g.task {
+			if task == nil {
+				return
 			}
+			task()
+			g.pool.recycleGoroutine(g)
 		}
 	})
 }

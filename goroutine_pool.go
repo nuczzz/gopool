@@ -76,20 +76,17 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 // cleanGoroutinePeriodically clean idle goroutine if idleGoroutineNum greater
 // than maxIdleGoroutineNum.
 func (gp *goroutinePool) cleanGoroutinePeriodically() {
-	for {
-		select {
-		case <-gp.ticker.C:
-			gp.lock.Lock()
-			length := len(gp.idleGoroutines)
-			if length > gp.maxIdleGoroutineNum {
-				for i := gp.maxIdleGoroutineNum; i < length; i++ {
-					gp.idleGoroutines[i].Terminal()
-					gp.idleGoroutines[i] = nil
-				}
-				gp.idleGoroutines = gp.idleGoroutines[:gp.maxIdleGoroutineNum]
+	for range gp.ticker.C {
+		gp.lock.Lock()
+		length := len(gp.idleGoroutines)
+		if length > gp.maxIdleGoroutineNum {
+			for i := gp.maxIdleGoroutineNum; i < length; i++ {
+				gp.idleGoroutines[i].Terminal()
+				gp.idleGoroutines[i] = nil
 			}
-			gp.lock.Unlock()
+			gp.idleGoroutines = gp.idleGoroutines[:gp.maxIdleGoroutineNum]
 		}
+		gp.lock.Unlock()
 	}
 }
 
