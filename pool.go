@@ -15,10 +15,10 @@ type Pool interface {
 	SubmitTask(task func()) error
 }
 
-func NewPool(max int) Pool {
-	return newPool(max)
+func NewPool(maxGoNum, maxIdleGoNum int) Pool {
+	return newPool(maxGoNum, maxIdleGoNum)
 }
 
 func NewPoolWithDefault() Pool {
-	return newPool(DefaultMaxGoroutineNum)
+	return newPool(DefaultMaxGoroutineNum, DefaultMaxIdleGoroutineNum)
 }

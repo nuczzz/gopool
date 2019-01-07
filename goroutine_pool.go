@@ -9,8 +9,7 @@ import (
 const (
 	DefaultMaxGoroutineNum     = 50000
 	DefaultMaxIdleGoroutineNum = 10
-	//DefaultCleanPeriod     = 5 * 60 //second
-	DefaultCleanPeriod = 3 //second
+	DefaultCleanInterval       = 5 * 60 //second
 )
 
 var ErrPoolOverflow = errors.New("pool overflow")
@@ -76,20 +75,17 @@ func (gp *goroutinePool) recycleGoroutine(g Goroutine) {
 // cleanGoroutinePeriodically clean idle goroutine if idleGoroutineNum greater
 // than maxIdleGoroutineNum.
 func (gp *goroutinePool) cleanGoroutinePeriodically() {
-	for {
-		select {
-		case <-gp.ticker.C:
-			gp.lock.Lock()
-			length := len(gp.idleGoroutines)
-			if length > gp.maxIdleGoroutineNum {
-				for i := gp.maxIdleGoroutineNum; i < length; i++ {
-					gp.idleGoroutines[i].Terminal()
-					gp.idleGoroutines[i] = nil
-				}
-				gp.idleGoroutines = gp.idleGoroutines[:gp.maxIdleGoroutineNum]
+	for range gp.ticker.C {
+		gp.lock.Lock()
+		length := len(gp.idleGoroutines)
+		if length > gp.maxIdleGoroutineNum {
+			for i := gp.maxIdleGoroutineNum; i < length; i++ {
+				gp.idleGoroutines[i].Terminal()
+				gp.idleGoroutines[i] = nil
 			}
-			gp.lock.Unlock()
+			gp.idleGoroutines = gp.idleGoroutines[:gp.maxIdleGoroutineNum]
 		}
+		gp.lock.Unlock()
 	}
 }
 
@@ -124,12 +120,18 @@ func (gp *goroutinePool) SubmitTask(task func()) error {
 	return nil
 }
 
-func newPool(max int) Pool {
+func newPool(maxGoNum, maxIdleGoNum int) Pool {
+	if maxGoNum <= 0 {
+		maxGoNum = DefaultMaxGoroutineNum
+	}
+	if maxIdleGoNum <= 0 {
+		maxIdleGoNum = DefaultMaxIdleGoroutineNum
+	}
 	pool := &goroutinePool{
-		maxGoroutineNum:     max,
-		maxIdleGoroutineNum: DefaultMaxIdleGoroutineNum,
-		idleGoroutines:      make([]Goroutine, 0, max),
-		ticker:              time.NewTicker(time.Second * DefaultCleanPeriod),
+		maxGoroutineNum:     maxGoNum,
+		maxIdleGoroutineNum: maxIdleGoNum,
+		idleGoroutines:      make([]Goroutine, 0, maxGoNum),
+		ticker:              time.NewTicker(time.Second * DefaultCleanInterval),
 	}
 	go pool.cleanGoroutinePeriodically()
 	return pool
