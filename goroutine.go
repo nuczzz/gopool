@@ -9,7 +9,10 @@ import (
 type Task func()
 
 type Goroutine interface {
+	// Execute goroutine execute task.
 	Execute(task Task)
+
+	// Terminal terminal goroutine.
 	Terminal()
 }
 
@@ -35,15 +38,12 @@ func (g *goroutine) Terminal() {
 // run run goroutine
 func (g *goroutine) run() {
 	g.newGoroutineWithRecover(func() {
-		for {
-			select {
-			case task := <-g.task:
-				if task == nil {
-					return
-				}
-				task()
-				g.pool.recycleGoroutine(g)
+		for task := range g.task {
+			if task == nil {
+				return
 			}
+			task()
+			g.pool.recycleGoroutine(g)
 		}
 	})
 }

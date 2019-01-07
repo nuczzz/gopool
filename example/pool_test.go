@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-
-	//"github.com/nuczzz/gopool"
-	"gopool"
 	"time"
+
+	"github.com/nuczzz/gopool"
 )
 
 func TestPool(t *testing.T) {
